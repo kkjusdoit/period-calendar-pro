@@ -1082,12 +1082,13 @@ const { createApp, ref, computed, onMounted } = Vue;
 
 createApp({
   setup() {
-    const activeNav = ref('dashboard');
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeNav = ref(urlParams.get('tab') || 'dashboard');
     const chartMode = ref('all'); // 'all' or 'clean'
     const status = ref({});
     const records = ref([]);
     const settings = ref({});
-    const settingsDrawer = ref(false);
+    const settingsDrawer = ref(urlParams.get('drawer') === 'settings');
     const selectedYear = ref('');
     const testingEmail = ref(false);
     const testingWechat = ref(false);
