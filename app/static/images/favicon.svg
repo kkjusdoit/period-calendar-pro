@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    <linearGradient id="roseHeader" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF5E86"/>
+      <stop offset="50%" stop-color="#FA5278"/>
+      <stop offset="100%" stop-color="#E11D48"/>
+    </linearGradient>
+    <linearGradient id="heartGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF4D6D"/>
+      <stop offset="100%" stop-color="#E11D48"/>
+    </linearGradient>
+    <clipPath id="calClip">
+      <rect x="14" y="24" width="100" height="92" rx="18" ry="18"/>
+    </clipPath>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <!-- Binder Rings -->
+    <rect x="36" y="15" width="10" height="22" rx="5" ry="5" fill="#EAEFF2" stroke="#CBD5E1" stroke-width="1.5"/>
+    <rect x="82" y="15" width="10" height="22" rx="5" ry="5" fill="#EAEFF2" stroke="#CBD5E1" stroke-width="1.5"/>
+
+    <!-- Calendar Body -->
+    <rect x="14" y="24" width="100" height="92" rx="18" ry="18" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>
+
+    <!-- Scalloped Header within clip -->
+    <g clip-path="url(#calClip)">
+      <rect x="14" y="24" width="100" height="36" fill="url(#roseHeader)"/>
+      <path d="M 14 60 
+               Q 26.5 68, 39 60 
+               Q 51.5 68, 64 60 
+               Q 76.5 68, 89 60 
+               Q 101.5 68, 114 60 
+               L 114 24 L 14 24 Z" fill="url(#roseHeader)"/>
+    </g>
+
+    <!-- Ruby Heart in Calendar Center -->
+    <path d="M 64 100
+             C 64 100, 38 84, 38 71
+             C 38 60, 48 54, 57 58
+             C 60 59, 62 62, 64 65
+             C 66 62, 68 59, 71 58
+             C 80 54, 90 60, 90 71
+             C 90 84, 64 100, 64 100 Z" 
+          fill="url(#heartGrad)"/>
+  </g>
+</svg>
