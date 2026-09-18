@@ -381,3 +381,118 @@ def check_and_send_reminder(force_test=False):
             "next_start": str(next_start)
         }
     return {"status": "skipped", "reason": "No records"}
+
+def calculate_next_remind(latest, period_cycle: int, menses_days: int, settings: dict, today: date = None):
+    """
+    Computes the upcoming scheduled reminder time, countdown, event type, and details.
+    """
+    if today is None:
+        today = date.today()
+
+    remind_days = int(settings.get("remind_days_before", "3"))
+    remind_time = settings.get("remind_time", "08:00")
+    remind_end_enabled = settings.get("remind_end_enabled", "1") == "1"
+    partner_name = settings.get("partner_name", "老婆")
+    wechat_enabled = settings.get("wechat_enabled", "1") == "1"
+    channel = "微信服务通知 + QQ邮箱" if wechat_enabled else "QQ邮箱"
+
+    if not latest:
+        return {
+            "time_display": "暂无记录",
+            "type_cn": "首次打卡后自动推算",
+            "summary": "添加第一条生理期记录后，系统将自动预约推送时机。",
+            "channel": channel,
+            "days_left": None,
+            "scheduled_date": None
+        }
+
+    last_start = datetime.strptime(latest["start_date"], "%Y-%m-%d").date()
+    end_date = latest.get("end_date")
+
+    # CASE A: Currently in period (end_date is None or empty)
+    if not end_date:
+        expected_end_date = last_start + timedelta(days=menses_days)
+        days_diff = (expected_end_date - today).days
+
+        if days_diff > 0:
+            return {
+                "time_display": f"{expected_end_date.strftime('%m月%d日')} {remind_time} (还有 {days_diff} 天)",
+                "type_cn": "经期结束打卡提醒",
+                "summary": f"推算行经满 {menses_days} 天（{expected_end_date.strftime('%m月%d日')}），将在早 {remind_time} 自动推送提醒，记录离开日期防漏记。",
+                "channel": channel,
+                "days_left": days_diff,
+                "scheduled_date": str(expected_end_date)
+            }
+        elif days_diff == 0:
+            return {
+                "time_display": f"今天 {remind_time} (行经第 {menses_days} 天)",
+                "type_cn": "经期结束打卡提醒",
+                "summary": f"今日行经已满 {menses_days} 天，早 {remind_time} 自动推送打卡提醒，请留意大姨妈是否已离开。",
+                "channel": channel,
+                "days_left": 0,
+                "scheduled_date": str(expected_end_date)
+            }
+        else:
+            in_days = (today - last_start).days + 1
+            return {
+                "time_display": f"行经第 {in_days} 天 (待打卡)",
+                "type_cn": "等待记录经期结束",
+                "summary": f"已超过平均持续天数（{menses_days} 天），大姨妈离开后请点击上方按钮记录结束打卡。",
+                "channel": channel,
+                "days_left": 0,
+                "scheduled_date": str(today)
+            }
+
+    # CASE B: Period finished, awaiting next cycle
+    next_start = last_start + timedelta(days=period_cycle)
+    remind_date = next_start - timedelta(days=remind_days)
+    days_to_remind = (remind_date - today).days
+    days_to_next = (next_start - today).days
+
+    if days_to_remind > 0:
+        return {
+            "time_display": f"{remind_date.strftime('%m月%d日')} {remind_time} (还有 {days_to_remind} 天)",
+            "type_cn": f"来潮前 {remind_days} 天关怀备忘",
+            "summary": f"预计 {next_start.strftime('%m月%d日')} 来潮。将在前 {remind_days} 天（{remind_date.strftime('%m月%d日')}）早 {remind_time} 自动推送微信与邮箱，提醒备齐用品与温水暖宝。",
+            "channel": channel,
+            "days_left": days_to_remind,
+            "scheduled_date": str(remind_date)
+        }
+    elif days_to_remind == 0:
+        return {
+            "time_display": f"今天 {remind_time} (倒计时 {remind_days} 天)",
+            "type_cn": f"来潮前 {remind_days} 天关怀备忘",
+            "summary": f"已到达提前 {remind_days} 天节点，将在今日 {remind_time} 自动向双方微信与邮箱发送关怀通知。",
+            "channel": channel,
+            "days_left": 0,
+            "scheduled_date": str(remind_date)
+        }
+    elif days_to_next > 0:
+        return {
+            "time_display": f"{next_start.strftime('%m月%d日')} {remind_time} (还有 {days_to_next} 天来潮)",
+            "type_cn": "即将进入经期",
+            "summary": f"已进入经前期（还剩 {days_to_next} 天），请注意腹部保暖与作息，大姨妈到达后随时打卡。",
+            "channel": channel,
+            "days_left": days_to_next,
+            "scheduled_date": str(next_start)
+        }
+    elif days_to_next == 0:
+        return {
+            "time_display": f"今天预计来潮 (还剩 0 天)",
+            "type_cn": "预计今日来潮提醒",
+            "summary": f"今天是预计的生理期第一天（周期第 {period_cycle} 天），若见红请点击上方按钮记录来潮。",
+            "channel": channel,
+            "days_left": 0,
+            "scheduled_date": str(next_start)
+        }
+    else:
+        overdue = abs(days_to_next)
+        return {
+            "time_display": f"已推迟 {overdue} 天",
+            "type_cn": "生理期推迟关注",
+            "summary": f"已超过预计来潮日 {overdue} 天，请保持放松与规律作息，大姨妈到达后随时打卡。",
+            "channel": channel,
+            "days_left": 0,
+            "scheduled_date": str(today)
+        }
+

@@ -14,7 +14,7 @@ from app.database import (
     get_settings, update_settings, get_effective_period_days,
     classify_record, get_clean_analytics
 )
-from app.reminder import check_and_send_reminder
+from app.reminder import check_and_send_reminder, calculate_next_remind
 
 
 logging.basicConfig(level=logging.INFO)
@@ -108,7 +108,14 @@ def get_status():
             "partner_name": partner_name,
             "is_in_period": False,
             "total_records": 0,
-            "analytics": clean_stats
+            "analytics": clean_stats,
+            "next_remind_info": {
+                "time_display": "暂无记录",
+                "type_cn": "首次打卡后自动推算",
+                "summary": "添加第一条生理期记录后，系统将依据科学周期自动预约推送时机。",
+                "channel": "微信服务通知 + QQ邮箱",
+                "days_left": None
+            }
         }
 
     last_start = datetime.strptime(latest["start_date"], "%Y-%m-%d").date()
@@ -150,6 +157,8 @@ def get_status():
     latest_dict = dict(latest)
     latest_dict["diagnosis"] = classify_record(latest_dict)
 
+    next_remind = calculate_next_remind(latest_dict, period_cycle, menses_days, settings, today)
+
     return {
         "has_data": True,
         "today": str(today),
@@ -170,6 +179,7 @@ def get_status():
         "last_record": latest_dict,
         "total_records": total_count,
         "analytics": clean_stats,
+        "next_remind_info": next_remind,
         "last_remind_info": {
             "time": settings.get("last_remind_at") or "2026-09-17 18:04",
             "type": settings.get("last_remind_type") or "test",
